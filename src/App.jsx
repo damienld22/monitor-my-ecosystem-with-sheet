@@ -1,6 +1,7 @@
 import {
   Button,
   CircularProgress,
+  Link,
   Table,
   TableContainer,
   Tbody,
@@ -104,6 +105,7 @@ function ElementsTable({ elements, onElementUpdated }) {
           <Tr>
             <Th>Name</Th>
             <Th>Description</Th>
+            <Th>News link</Th>
             <Th>Latest version</Th>
             <Th>Actions</Th>
           </Tr>
@@ -112,18 +114,27 @@ function ElementsTable({ elements, onElementUpdated }) {
           {elements.map((elt) => (
             <Tr key={elt.name}>
               <Td>
-                <a
+                <Link
                   className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}
                   href={elt.link}
-                  target="_blank"
+                  isExternal
                 >
                   {elt.name}
-                </a>
+                </Link>
               </Td>
               <Td>
                 <span className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}>
                   {elt.description}
                 </span>
+              </Td>
+              <Td>
+                <Link
+                  className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}
+                  href={elt.newsLink}
+                  isExternal
+                >
+                  {elt.name} news
+                </Link>
               </Td>
               <Td>
                 <span className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}>
