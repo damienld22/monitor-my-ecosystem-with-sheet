@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://damienld22.github.io/monitor-my-ecosystem",
+  "homepage": "/monitor-my-ecosystem",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
