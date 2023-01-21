@@ -11,7 +11,8 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 import AddItemModal from "./AddItemModal";
 import "./App.css";
 import { getAllData, indicateUpToDate } from "./requests";
@@ -20,19 +21,11 @@ const isElementIsUpToDate = (element) =>
   element.latestVersion === element.latestCheckedVersion;
 
 function App() {
-  const [usedTech, setUsedTech] = useState([]);
-  const [interestedInTech, setInterestedInTech] = useState([]);
+  const { data, isLoading } = useQuery("items", getAllData);
+  const usedItems = data?.filter((elt) => elt.sheet === "Using") || [];
+  const interestedItems =
+    data?.filter((elt) => elt.sheet === "InterestedIn") || [];
   const [addItemOpen, setAddItemOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    setIsLoading(true);
-    getAllData().then((data) => {
-      setUsedTech(data.filter((elt) => elt.sheet === "Using"));
-      setInterestedInTech(data.filter((elt) => elt.sheet === "InterestedIn"));
-      setIsLoading(false);
-    });
-  }, []);
 
   return (
     <div className="App">
@@ -49,58 +42,40 @@ function App() {
       {isLoading ? (
         <CircularProgress style={{ marginTop: "10vh" }} isIndeterminate />
       ) : (
-        <div className="Tables">
-          <Text fontSize="4xl">Using</Text>
-          <ElementsTable
-            elements={usedTech}
-            onElementUpdated={(eltUpdated) => {
-              setUsedTech((prev) =>
-                prev.map((elt) =>
-                  elt.name === eltUpdated.name ? eltUpdated : elt
-                )
-              );
-            }}
-          />
+        <div>
+          <Text fontSize="4xl" style={{ paddingBottom: 20 }}>
+            Using
+          </Text>
+          <ElementsTable elements={usedItems} />
 
-          <Text fontSize="4xl">Interested In</Text>
-          <ElementsTable
-            elements={interestedInTech}
-            onElementUpdated={(eltUpdated) => {
-              setInterestedInTech((prev) =>
-                prev.map((elt) =>
-                  elt.name === eltUpdated.name ? eltUpdated : elt
-                )
-              );
-            }}
-          />
+          <Text fontSize="4xl" style={{ paddingBottom: 20 }}>
+            Interested In
+          </Text>
+          <ElementsTable elements={interestedItems} />
         </div>
       )}
 
       <AddItemModal
-        onClose={(element) => {
-          if (element?.sheet === "Using") {
-            setUsedTech((prev) => [...prev, element]);
-          } else if (element?.sheet === "InterestedIn") {
-            setInterestedInTech((prev) => [...prev, element]);
-          }
-          setAddItemOpen(false);
-        }}
+        onClose={() => setAddItemOpen(false)}
         isOpen={addItemOpen}
       />
     </div>
   );
 }
 
-function ElementsTable({ elements, onElementUpdated }) {
-  const indicateElementChecked = (element) => {
-    indicateUpToDate(element)
-      .then(onElementUpdated)
-      .catch(() => console.error("Failed indicate element updated"));
-  };
+function ElementsTable({ elements }) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation(indicateUpToDate, {
+    onSuccess: (result) => {
+      queryClient.setQueryData("items", (old) =>
+        old.map((elt) => (elt.name === result.name ? result : elt))
+      );
+    },
+  });
 
   return (
-    <TableContainer>
-      <Table variant="simple">
+    <TableContainer style={{ paddingBottom: 40 }}>
+      <Table variant="striped">
         <Thead>
           <Tr>
             <Th>Name</Th>
@@ -114,38 +89,32 @@ function ElementsTable({ elements, onElementUpdated }) {
           {elements.map((elt) => (
             <Tr key={elt.name}>
               <Td>
-                <Link
-                  className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}
-                  href={elt.link}
-                  isExternal
-                >
+                <Link href={elt.link} isExternal>
                   {elt.name}
                 </Link>
               </Td>
               <Td>
-                <span className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}>
-                  {elt.description}
-                </span>
+                <span>{elt.description}</span>
               </Td>
               <Td>
-                <Link
-                  className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}
-                  href={elt.newsLink}
-                  isExternal
-                >
+                <Link href={elt.newsLink} isExternal>
                   {elt.name} news
                 </Link>
               </Td>
               <Td>
                 <span className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}>
-                  {elt.latestVersion}
+                  {isElementIsUpToDate(elt)
+                    ? elt.latestVersion
+                    : `${elt.latestVersion} (Latest checked : ${
+                        elt.latestCheckedVersion || "/"
+                      })`}
                 </span>
               </Td>
               <Td>
                 {isElementIsUpToDate(elt) ? (
                   <span>Up to date !</span>
                 ) : (
-                  <Button onClick={() => indicateElementChecked(elt)}>
+                  <Button onClick={() => mutation.mutate(elt)}>
                     Indicate OK
                   </Button>
                 )}

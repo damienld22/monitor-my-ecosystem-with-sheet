@@ -4,6 +4,17 @@ const ROW_PACKAGE_NAME = 'E';
 const ROW_VERSION = 'F';
 const ROW_CHECKED_VERSION = 'G';
 
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('Actions')
+      .addItem('Refresh', 'refresh')
+      .addToUi();
+}
+
+function refresh() {
+  updateLatestVersionsOfPackages();
+}
+
 /**
  * Iterate on each package and update the latest version
  */
@@ -12,6 +23,9 @@ function updateLatestVersionsOfPackages() {
   iterateAndUpdateLatestVersion('InterestedIn');
 }
 
+/**
+ * Iterate on each line, fetch npm package version and update it
+ */
 function iterateAndUpdateLatestVersion(sheetName) {
   const sheet = SpreadsheetApp.getActive().getSheetByName(sheetName);
 
@@ -23,20 +37,21 @@ function iterateAndUpdateLatestVersion(sheetName) {
       const url = `https://registry.npmjs.org/${packageName}/latest`;
       const response = UrlFetchApp.fetch(url, { method: 'GET'});
       const { version } = JSON.parse(response);
+      sheet.getRange(`${ROW_VERSION}${i}`).setNumberFormat('@');
       sheet.getRange(`${ROW_VERSION}${i}`).setValue(version);
     }
   }
 }
 
-function refresh() {
-  updateLatestVersionsOfPackages();
-}
+/**
+ * Handle GET request to fetch data (cell content) 
+ */
+function doGet() {
+  const usingData = exportToJSONBySheetname('Using');
+  const interestedInData = exportToJSONBySheetname('InterestedIn');
+  const result = [...usingData, ...interestedInData];
 
-function onOpen() {
-  var ui = SpreadsheetApp.getUi();
-  ui.createMenu('Actions')
-      .addItem('Refresh', 'refresh')
-      .addToUi();
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function exportToJSONBySheetname(sheetName) {
@@ -65,17 +80,6 @@ function exportToJSONBySheetname(sheetName) {
 
 
 /**
- * Handle GET request to fetch data (cell content) 
- */
-function doGet() {
-  const usingData = exportToJSONBySheetname('Using');
-  const interestedInData = exportToJSONBySheetname('InterestedIn');
-  const result = [...usingData, ...interestedInData];
-
-  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-}
-
-/**
  * Function to create a new line or to indicate element checked
  * Is "check_element" is in query parameter, we update the element
  * Otherwise, we add a new element
@@ -99,12 +103,29 @@ function doPost(event) {
       return ContentService.createTextOutput(JSON.stringify({ "result": "failed found element"})).setMimeType(ContentService.MimeType.JSON);
     } else {
       const currentVersion = sheet.getRange(`${ROW_VERSION}${foundIndex + 1}`).getValue();
+      sheet.getRange(`${ROW_CHECKED_VERSION}${foundIndex + 1}`).setNumberFormat('@');
       sheet.getRange(`${ROW_CHECKED_VERSION}${foundIndex + 1}`).setValue(currentVersion.toString());
     }
   } else {
-    sheet.appendRow([jsonData.name, jsonData.description, jsonData.link, jsonData.newsLink, jsonData.npmPackage, jsonData.latestVersion]);
+    const newLine = getFirstEmptyRowByColumnArray(sheet);
+    sheet.getRange(`A${newLine}`).setValue(jsonData.name);
+    sheet.getRange(`B${newLine}`).setValue(jsonData.description);
+    sheet.getRange(`C${newLine}`).setValue(jsonData.link);
+    sheet.getRange(`D${newLine}`).setValue(jsonData.newsLink);
+    sheet.getRange(`E${newLine}`).setValue(jsonData.npmPackage);
+    sheet.getRange(`F${newLine}`).setNumberFormat("@");
+    sheet.getRange(`F${newLine}`).setValue(jsonData.latestVersion.toString());
   }
 
   return ContentService.createTextOutput(JSON.stringify({ "result": "success"})).setMimeType(ContentService.MimeType.JSON);
 }
 
+function getFirstEmptyRowByColumnArray(sheet) {
+  const column = sheet.getRange('A:A');
+  const values = column.getValues(); // get all data in one call
+  let ct = 0;
+  while ( values[ct] && values[ct][0] != "" ) {
+    ct++;
+  }
+  return (ct+1);
+}

@@ -12,16 +12,31 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useState } from "react";
+import { useMutation, useQueryClient } from "react-query";
 import { createNewItem } from "./requests";
 
 export default function AddItemModal({ isOpen = false, onClose }) {
+  const toast = useToast();
+  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
   const [newsLink, setNewsLink] = useState("");
   const [npmPackage, setNpmPackage] = useState("");
   const [sheet, setSheet] = useState("Using");
-  const toast = useToast();
+  const mutation = useMutation(createNewItem, {
+    onSuccess: (result) => {
+      queryClient.setQueryData("items", (old) => [...old, result]);
+      toast({ title: "Item created", status: "success", isClosable: true });
+    },
+    onError: () => {
+      toast({
+        title: "An error occured",
+        status: "error",
+        isClosable: true,
+      });
+    },
+  });
 
   const clear = () => {
     setName("");
@@ -31,34 +46,17 @@ export default function AddItemModal({ isOpen = false, onClose }) {
     setNpmPackage("");
     setSheet("Using");
   };
-
   const onValidate = () => {
-    createNewItem({
+    mutation.mutate({
       name,
       description,
       link,
       newsLink,
       npmPackage,
       sheet,
-    })
-      .then((createdElement) => {
-        toast({
-          title: "Item created",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
-        clear();
-        onClose(createdElement);
-      })
-      .catch(() => {
-        toast({
-          title: "Failed to create item",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      });
+    });
+    clear();
+    onClose();
   };
 
   return (
