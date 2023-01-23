@@ -13,17 +13,17 @@ import {
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "react-query";
+import { AVAILABLE_CATEGORIES } from "./constants";
 import { createNewItem } from "./requests";
 
 export default function AddItemModal({ isOpen = false, onClose }) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("Other");
   const [link, setLink] = useState("");
   const [newsLink, setNewsLink] = useState("");
   const [npmPackage, setNpmPackage] = useState("");
-  const [sheet, setSheet] = useState("Using");
   const mutation = useMutation(createNewItem, {
     onSuccess: (result) => {
       queryClient.setQueryData("items", (old) => [...old, result]);
@@ -40,20 +40,18 @@ export default function AddItemModal({ isOpen = false, onClose }) {
 
   const clear = () => {
     setName("");
-    setDescription("");
+    setCategory("Other");
     setLink("");
     setNewsLink("");
     setNpmPackage("");
-    setSheet("Using");
   };
   const onValidate = () => {
     mutation.mutate({
       name,
-      description,
+      category,
       link,
       newsLink,
       npmPackage,
-      sheet,
     });
     clear();
     onClose();
@@ -72,12 +70,18 @@ export default function AddItemModal({ isOpen = false, onClose }) {
             value={name}
             onChange={(evt) => setName(evt.target.value)}
           />
-          <Input
+          <Select
             style={{ marginTop: 10 }}
-            placeholder="Description"
-            value={description}
-            onChange={(evt) => setDescription(evt.target.value)}
-          />
+            value={category}
+            onChange={(evt) => setCategory(evt.target.value)}
+            placeholder="Select category"
+          >
+            {AVAILABLE_CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </Select>
           <Input
             style={{ marginTop: 10 }}
             placeholder="Link"
@@ -96,15 +100,6 @@ export default function AddItemModal({ isOpen = false, onClose }) {
             value={npmPackage}
             onChange={(evt) => setNpmPackage(evt.target.value)}
           />
-          <Select
-            style={{ marginTop: 10 }}
-            value={sheet}
-            onChange={(evt) => setSheet(evt.target.value)}
-            placeholder="Select sheet"
-          >
-            <option value="Using">Using</option>
-            <option value="InterestedIn">Interested In</option>
-          </Select>
         </ModalBody>
 
         <ModalFooter>

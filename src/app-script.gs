@@ -12,15 +12,7 @@ function onOpen() {
 }
 
 function refresh() {
-  updateLatestVersionsOfPackages();
-}
-
-/**
- * Iterate on each package and update the latest version
- */
-function updateLatestVersionsOfPackages() {
-  iterateAndUpdateLatestVersion('Using');
-  iterateAndUpdateLatestVersion('InterestedIn');
+  iterateAndUpdateLatestVersion('Sheet');
 }
 
 /**
@@ -47,10 +39,7 @@ function iterateAndUpdateLatestVersion(sheetName) {
  * Handle GET request to fetch data (cell content) 
  */
 function doGet() {
-  const usingData = exportToJSONBySheetname('Using');
-  const interestedInData = exportToJSONBySheetname('InterestedIn');
-  const result = [...usingData, ...interestedInData];
-
+  const result = exportToJSONBySheetname('Sheet');
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -64,7 +53,7 @@ function exportToJSONBySheetname(sheetName) {
     if (element[0]) {
       result.push({
         name: element[0],
-        description: element[1],
+        category: element[1],
         link: element[2],
         newsLink: element[3],
         npmPackage: element[4],
@@ -109,7 +98,7 @@ function doPost(event) {
   } else {
     const newLine = getFirstEmptyRowByColumnArray(sheet);
     sheet.getRange(`A${newLine}`).setValue(jsonData.name);
-    sheet.getRange(`B${newLine}`).setValue(jsonData.description);
+    sheet.getRange(`B${newLine}`).setValue(jsonData.category);
     sheet.getRange(`C${newLine}`).setValue(jsonData.link);
     sheet.getRange(`D${newLine}`).setValue(jsonData.newsLink);
     sheet.getRange(`E${newLine}`).setValue(jsonData.npmPackage);

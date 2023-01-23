@@ -15,7 +15,11 @@ export async function getAllData() {
 
 export async function createNewItem(element) {
   const versionOfPackage = await getVersionOfPackage(element.npmPackage);
-  const updatedItem = { ...element, latestVersion: versionOfPackage };
+  const updatedItem = {
+    ...element,
+    latestVersion: versionOfPackage,
+    sheet: "Sheet",
+  };
   await fetch(
     new Request(URL_API, {
       method: "POST",

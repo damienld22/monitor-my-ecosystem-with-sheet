@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import AddItemModal from "./AddItemModal";
 import "./App.css";
+import { AVAILABLE_CATEGORIES } from "./constants";
 import { getAllData, indicateUpToDate } from "./requests";
 
 const isElementIsUpToDate = (element) =>
@@ -22,9 +23,6 @@ const isElementIsUpToDate = (element) =>
 
 function App() {
   const { data, isLoading } = useQuery("items", getAllData);
-  const usedItems = data?.filter((elt) => elt.sheet === "Using") || [];
-  const interestedItems =
-    data?.filter((elt) => elt.sheet === "InterestedIn") || [];
   const [addItemOpen, setAddItemOpen] = useState(false);
 
   return (
@@ -42,17 +40,12 @@ function App() {
       {isLoading ? (
         <CircularProgress style={{ marginTop: "10vh" }} isIndeterminate />
       ) : (
-        <div>
-          <Text fontSize="4xl" style={{ paddingBottom: 20 }}>
-            Using
-          </Text>
-          <ElementsTable elements={usedItems} />
-
-          <Text fontSize="4xl" style={{ paddingBottom: 20 }}>
-            Interested In
-          </Text>
-          <ElementsTable elements={interestedItems} />
-        </div>
+        AVAILABLE_CATEGORIES.map((cat) => (
+          <ElementsTable
+            name={cat}
+            elements={data.filter((elt) => elt.category === cat)}
+          />
+        ))
       )}
 
       <AddItemModal
@@ -63,7 +56,7 @@ function App() {
   );
 }
 
-function ElementsTable({ elements }) {
+function ElementsTable({ elements, name }) {
   const queryClient = useQueryClient();
   const mutation = useMutation(indicateUpToDate, {
     onSuccess: (result) => {
@@ -73,57 +66,64 @@ function ElementsTable({ elements }) {
     },
   });
 
-  return (
-    <TableContainer style={{ paddingBottom: 40 }}>
-      <Table variant="striped">
-        <Thead>
-          <Tr>
-            <Th>Name</Th>
-            <Th>Description</Th>
-            <Th>News link</Th>
-            <Th>Latest version</Th>
-            <Th>Actions</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {elements.map((elt) => (
-            <Tr key={elt.name}>
-              <Td>
-                <Link href={elt.link} isExternal>
-                  {elt.name}
-                </Link>
-              </Td>
-              <Td>
-                <span>{elt.description}</span>
-              </Td>
-              <Td>
-                <Link href={elt.newsLink} isExternal>
-                  {elt.name} news
-                </Link>
-              </Td>
-              <Td>
-                <span className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}>
-                  {isElementIsUpToDate(elt)
-                    ? elt.latestVersion
-                    : `${elt.latestVersion} (Latest checked : ${
-                        elt.latestCheckedVersion || "/"
-                      })`}
-                </span>
-              </Td>
-              <Td>
-                {isElementIsUpToDate(elt) ? (
-                  <span>Up to date !</span>
-                ) : (
-                  <Button onClick={() => mutation.mutate(elt)}>
-                    Indicate OK
-                  </Button>
-                )}
-              </Td>
+  return elements.length > 0 ? (
+    <div style={{ marginTop: 20, marginBottom: 20 }}>
+      <Text fontSize="2xl">{name}</Text>
+      <TableContainer style={{ paddingTop: 10, width: "80vw" }}>
+        <Table variant="striped">
+          <Thead>
+            <Tr>
+              <Th>Name</Th>
+              <Th>Category</Th>
+              <Th>News link</Th>
+              <Th>Latest version</Th>
+              <Th>Actions</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
-    </TableContainer>
+          </Thead>
+          <Tbody>
+            {elements.map((elt) => (
+              <Tr key={elt.name}>
+                <Td>
+                  <Link href={elt.link} isExternal>
+                    {elt.name}
+                  </Link>
+                </Td>
+                <Td>
+                  <span>{elt.category}</span>
+                </Td>
+                <Td>
+                  <Link href={elt.newsLink} isExternal>
+                    {elt.name} news
+                  </Link>
+                </Td>
+                <Td>
+                  <span
+                    className={isElementIsUpToDate(elt) ? "" : "NotUpToDate"}
+                  >
+                    {isElementIsUpToDate(elt)
+                      ? elt.latestVersion
+                      : `${elt.latestVersion} (Latest checked : ${
+                          elt.latestCheckedVersion || "/"
+                        })`}
+                  </span>
+                </Td>
+                <Td>
+                  {isElementIsUpToDate(elt) ? (
+                    <span>Up to date !</span>
+                  ) : (
+                    <Button onClick={() => mutation.mutate(elt)}>
+                      Indicate OK
+                    </Button>
+                  )}
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </TableContainer>
+    </div>
+  ) : (
+    <></>
   );
 }
 
