@@ -42,6 +42,7 @@ function App() {
       ) : (
         AVAILABLE_CATEGORIES.map((cat) => (
           <ElementsTable
+            key={cat}
             name={cat}
             elements={data.filter((elt) => elt.category === cat)}
           />
