@@ -74,7 +74,6 @@ function ElementsTable({ elements, name }) {
           <Thead>
             <Tr>
               <Th>Name</Th>
-              <Th>Category</Th>
               <Th>News link</Th>
               <Th>Latest version</Th>
               <Th>Actions</Th>
@@ -87,9 +86,6 @@ function ElementsTable({ elements, name }) {
                   <Link href={elt.link} isExternal>
                     {elt.name}
                   </Link>
-                </Td>
-                <Td>
-                  <span>{elt.category}</span>
                 </Td>
                 <Td>
                   <Link href={elt.newsLink} isExternal>
